@@ -13,6 +13,7 @@ from data_validation import (
     CATEGORICAL_COLUMNS,
     NUMERIC_COLUMNS,
     SchemaError,
+    SchemaErrors,
     clean_data,
     load_data,
     price_formula_match_share,
@@ -24,6 +25,11 @@ from data_validation import (
 ALPHA = 0.01          # уровень значимости для теста "дрейфа нет"
 RANDOM_STATE = 42
 MIN_ROWS_FOR_STATS = 100
+
+# Новые версии Pandera для ошибок уровня схемы (лишние колонки, порядок)
+# выбрасывают SchemaErrors даже при lazy=False, старые — SchemaError.
+# Принимаем оба варианта, чтобы тесты не зависели от версии библиотеки.
+SCHEMA_VALIDATION_ERRORS = (SchemaError, SchemaErrors)
 
 
 # --- ФИКСТУРЫ ---
@@ -75,19 +81,19 @@ def test_cleaned_data_pandera(raw_df):
     ],
 )
 def test_invalid_values_pandera(raw_df, column, bad_value):
-    with pytest.raises(SchemaError):
+    with pytest.raises(SCHEMA_VALIDATION_ERRORS):
         validate_data(_corrupt(raw_df, column, bad_value))
 
 
 def test_missing_column_pandera(raw_df):
-    with pytest.raises(SchemaError):
+    with pytest.raises(SCHEMA_VALIDATION_ERRORS):
         validate_data(raw_df.drop(columns="Trip_Price"))
 
 
 def test_extra_column_pandera(raw_df):
     df = raw_df.copy()
     df["Driver_Name"] = "Ivan"
-    with pytest.raises(SchemaError):
+    with pytest.raises(SCHEMA_VALIDATION_ERRORS):
         validate_data(df)
 
 
